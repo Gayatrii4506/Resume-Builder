@@ -10,8 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import Preview from "./pages/Preview";
 import NotFound from "./pages/NotFound";
-import { lov-add-dependency>jspdf@latest</lov-add-dependency>
-import { lov-add-dependency>uuid@latest</lov-add-dependency>
+// import jsPDF from "jspdf"; // Will be used in exportService
+// import { v4 as uuidv4 } from "uuid"; // Will be used where needed
 
 const queryClient = new QueryClient();
 
