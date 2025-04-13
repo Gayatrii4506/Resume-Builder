@@ -1,5 +1,5 @@
 
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { Resume, ResumeTemplate } from "@/types";
 
 export const exportToPdf = (resume: Resume, templateName: ResumeTemplate) => {
