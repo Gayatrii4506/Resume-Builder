@@ -1,15 +1,15 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, X, Plus } from "lucide-react";
+import { Sparkles, X, Plus, BarChart4 } from "lucide-react";
 import { useResume } from "@/contexts/ResumeContext";
 import { useToast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 
 const SkillsSection = () => {
   const { toast } = useToast();
-  const { resume, updateResumeContent } = useResume();
+  const { resume, updateResumeContent, jobDescription } = useResume();
   const { skills } = resume.content;
   
   const [newSkill, setNewSkill] = useState("");
@@ -89,18 +89,38 @@ const SkillsSection = () => {
     setIsGenerating(false);
   };
   
+  const navigateToJobMatch = () => {
+    // Find the job-match tab and click it
+    const jobMatchTab = document.querySelector('[data-value="job-match"]');
+    if (jobMatchTab) {
+      (jobMatchTab as HTMLElement).click();
+    }
+  };
+  
   return (
     <div className="resume-section">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Skills</h3>
-        <Button
-          variant="outline"
-          onClick={generateAiSkills}
-          disabled={isGenerating}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {isGenerating ? "Generating..." : "Suggest Skills"}
-        </Button>
+        <div className="flex gap-2">
+          {jobDescription && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={navigateToJobMatch}
+            >
+              <BarChart4 className="h-4 w-4 mr-2" />
+              Analyze Skill Gap
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={generateAiSkills}
+            disabled={isGenerating}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isGenerating ? "Generating..." : "Suggest Skills"}
+          </Button>
+        </div>
       </div>
       
       <div className="flex gap-2 mb-4">

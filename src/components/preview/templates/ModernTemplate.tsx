@@ -1,7 +1,8 @@
-
 import React from "react";
 import { Mail, Phone, MapPin, Linkedin, Globe } from "lucide-react";
 import { Resume } from "@/types";
+import { useResume } from "@/contexts/ResumeContext";
+import { Avatar } from "@/components/ui/avatar";
 
 interface ModernTemplateProps {
   resume: Resume;
@@ -9,126 +10,167 @@ interface ModernTemplateProps {
 
 const ModernTemplate: React.FC<ModernTemplateProps> = ({ resume }) => {
   const { personalInfo, summary, experience, education, skills } = resume.content;
-  
+  const { templateColors } = useResume();
+
+  const styles = {
+    container: {
+      fontFamily: "sans-serif",
+      backgroundColor: templateColors.background,
+      color: templateColors.text,
+    },
+    header: {
+      borderBottom: `2px solid ${templateColors.primary}`,
+      padding: "1.5rem",
+    },
+    section: {
+      borderLeft: `3px solid ${templateColors.accent}`,
+      marginBottom: "1.5rem",
+      paddingLeft: "1rem",
+    },
+    title: {
+      color: templateColors.primary,
+      borderBottom: `2px solid ${templateColors.secondary}`,
+      display: "inline-block",
+      marginBottom: "0.5rem",
+    }
+  };
+
   return (
-    <div className="font-sans">
+    <div style={styles.container}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-primary">{personalInfo.fullName}</h1>
-        <h2 className="text-xl text-muted-foreground mb-3">{personalInfo.jobTitle}</h2>
+      <div style={styles.header} className="flex items-start gap-6">
+        {personalInfo.photoUrl && (
+          <div className="flex-shrink-0">
+            <Avatar className="w-32 h-32 border-4" style={{ borderColor: templateColors.primary }}>
+              <img 
+                src={personalInfo.photoUrl} 
+                alt={personalInfo.fullName}
+                className="w-full h-full object-cover"
+              />
+            </Avatar>
+          </div>
+        )}
         
-        <div className="flex flex-wrap gap-3 text-sm">
-          {personalInfo.email && (
-            <div className="flex items-center gap-1">
-              <Mail className="h-4 w-4 text-primary" />
-              <span>{personalInfo.email}</span>
-            </div>
-          )}
+        <div className="flex-grow">
+          <h1 className="text-3xl font-bold" style={{ color: templateColors.primary }}>
+            {personalInfo.fullName}
+          </h1>
+          <h2 className="text-xl mb-3" style={{ color: templateColors.secondary }}>
+            {personalInfo.jobTitle}
+          </h2>
           
-          {personalInfo.phone && (
-            <div className="flex items-center gap-1">
-              <Phone className="h-4 w-4 text-primary" />
-              <span>{personalInfo.phone}</span>
-            </div>
-          )}
-          
-          {personalInfo.location && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>{personalInfo.location}</span>
-            </div>
-          )}
-          
-          {personalInfo.linkedin && (
-            <div className="flex items-center gap-1">
-              <Linkedin className="h-4 w-4 text-primary" />
-              <span>{personalInfo.linkedin}</span>
-            </div>
-          )}
-          
-          {personalInfo.website && (
-            <div className="flex items-center gap-1">
-              <Globe className="h-4 w-4 text-primary" />
-              <span>{personalInfo.website}</span>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-3 text-sm">
+            {personalInfo.email && (
+              <div className="flex items-center gap-1">
+                <Mail className="h-4 w-4" style={{ color: templateColors.accent }} />
+                <span>{personalInfo.email}</span>
+              </div>
+            )}
+            
+            {personalInfo.phone && (
+              <div className="flex items-center gap-1">
+                <Phone className="h-4 w-4" style={{ color: templateColors.accent }} />
+                <span>{personalInfo.phone}</span>
+              </div>
+            )}
+            
+            {personalInfo.location && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" style={{ color: templateColors.accent }} />
+                <span>{personalInfo.location}</span>
+              </div>
+            )}
+            
+            {personalInfo.linkedin && (
+              <div className="flex items-center gap-1">
+                <Linkedin className="h-4 w-4" style={{ color: templateColors.accent }} />
+                <span>{personalInfo.linkedin}</span>
+              </div>
+            )}
+            
+            {personalInfo.website && (
+              <div className="flex items-center gap-1">
+                <Globe className="h-4 w-4" style={{ color: templateColors.accent }} />
+                <span>{personalInfo.website}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      
-      {/* Summary */}
-      {summary && (
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-primary border-b border-primary pb-1 mb-2">Summary</h3>
-          <p>{summary}</p>
-        </div>
-      )}
-      
-      {/* Experience */}
-      {experience.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-primary border-b border-primary pb-1 mb-3">Experience</h3>
-          <div className="space-y-4">
-            {experience.map((exp) => (
-              <div key={exp.id}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold">{exp.title}</h4>
-                    <h5>{exp.company}, {exp.location}</h5>
+
+      {/* Main Content */}
+      <div className="p-6">
+        {/* Summary */}
+        {summary && (
+          <div style={styles.section}>
+            <h3 style={styles.title}>Professional Summary</h3>
+            <p className="text-sm leading-relaxed">{summary}</p>
+          </div>
+        )}
+
+        {/* Experience */}
+        {experience.length > 0 && (
+          <div style={styles.section}>
+            <h3 style={styles.title}>Experience</h3>
+            <div className="space-y-4">
+              {experience.map((exp) => (
+                <div key={exp.id} className="text-sm">
+                  <div className="font-semibold" style={{ color: templateColors.secondary }}>
+                    {exp.title} at {exp.company}
                   </div>
-                  <p className="text-sm text-muted-foreground">{exp.startDate} - {exp.endDate}</p>
-                </div>
-                
-                {exp.description && <p className="mt-1 mb-2">{exp.description}</p>}
-                
-                {exp.highlights.length > 0 && (
-                  <ul className="list-disc ml-5 space-y-1">
-                    {exp.highlights.map((highlight, index) => (
-                      <li key={index}>{highlight}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Education */}
-      {education.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-primary border-b border-primary pb-1 mb-3">Education</h3>
-          <div className="space-y-4">
-            {education.map((edu) => (
-              <div key={edu.id}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold">{edu.degree}</h4>
-                    <h5>{edu.institution}, {edu.location}</h5>
+                  <div className="text-xs mb-1" style={{ color: templateColors.accent }}>
+                    {exp.startDate} - {exp.endDate}
                   </div>
-                  <p className="text-sm text-muted-foreground">{edu.startDate} - {edu.endDate}</p>
+                  <p className="text-sm">{exp.description}</p>
                 </div>
-                
-                {edu.gpa && <p className="mt-1">GPA: {edu.gpa}</p>}
-                {edu.description && <p className="mt-1">{edu.description}</p>}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      
-      {/* Skills */}
-      {skills.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-primary border-b border-primary pb-1 mb-2">Skills</h3>
-          <div className="flex flex-wrap gap-1.5">
-            {skills.map((skill, index) => (
-              <span key={index} className="bg-muted px-2 py-1 rounded text-sm">
-                {skill}
-              </span>
-            ))}
+        )}
+
+        {/* Education */}
+        {education.length > 0 && (
+          <div style={styles.section}>
+            <h3 style={styles.title}>Education</h3>
+            <div className="space-y-4">
+              {education.map((edu) => (
+                <div key={edu.id} className="text-sm">
+                  <div className="font-semibold" style={{ color: templateColors.secondary }}>
+                    {edu.degree}
+                  </div>
+                  <div style={{ color: templateColors.accent }}>
+                    {edu.institution}, {edu.location}
+                  </div>
+                  <div className="text-xs">
+                    {edu.startDate} - {edu.endDate}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <div style={styles.section}>
+            <h3 style={styles.title}>Skills</h3>
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 rounded text-sm"
+                  style={{
+                    backgroundColor: templateColors.accent + '20',
+                    color: templateColors.primary
+                  }}
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 export interface Resume {
   id: string;
   name: string;
@@ -25,6 +24,7 @@ export interface PersonalInfo {
   location: string;
   linkedin?: string;
   website?: string;
+  photoUrl?: string;
 }
 
 export interface ExperienceItem {
@@ -88,7 +88,23 @@ export interface AiSuggestion {
   itemId?: string;
 }
 
-export type ResumeTemplate = "modern" | "professional" | "creative" | "minimal" | "executive";
+export type ResumeTemplate = 
+  | "modern-blue"
+  | "modern-green"
+  | "professional-maroon"
+  | "creative-purple"
+  | "minimal-gray"
+  | "executive-black"
+  | "modern-orange"
+  | "creative-teal";
+
+export interface TemplateColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  text: string;
+}
 
 export interface JobDescription {
   id: string;
