@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Resume, ResumeContent, AiSuggestion, JobDescription, ResumeTemplate } from "../types";
+import { Resume, ResumeContent, AiSuggestion, JobDescription, ResumeTemplate, TemplateColors } from "../types";
 import { v4 as uuidv4 } from "uuid";
+import { templateConfigs } from "@/config/templateConfig";
 
 interface ResumeContextType {
   resume: Resume;
@@ -13,6 +13,8 @@ interface ResumeContextType {
   setJobDescription: React.Dispatch<React.SetStateAction<JobDescription | null>>;
   activeTemplate: ResumeTemplate;
   setActiveTemplate: React.Dispatch<React.SetStateAction<ResumeTemplate>>;
+  templateColors: TemplateColors;
+  setTemplateColors: React.Dispatch<React.SetStateAction<TemplateColors>>;
   savedResumes: Resume[];
   saveCurrentResume: () => void;
   loadResume: (id: string) => void;
@@ -100,7 +102,8 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [resume, setResume] = useState<Resume>(defaultResume);
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
   const [jobDescription, setJobDescription] = useState<JobDescription | null>(null);
-  const [activeTemplate, setActiveTemplate] = useState<ResumeTemplate>("modern");
+  const [activeTemplate, setActiveTemplate] = useState<ResumeTemplate>("modern-blue");
+  const [templateColors, setTemplateColors] = useState<TemplateColors>(templateConfigs["modern-blue"]);
   const [savedResumes, setSavedResumes] = useState<Resume[]>([defaultResume]);
 
   const updateResumeContent = (content: Partial<ResumeContent>) => {
@@ -155,6 +158,8 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setJobDescription,
       activeTemplate,
       setActiveTemplate,
+      templateColors,
+      setTemplateColors,
       savedResumes,
       saveCurrentResume,
       loadResume,
@@ -165,7 +170,7 @@ export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   );
 };
 
-export const useResume = (): ResumeContextType => {
+export const useResume = () => {
   const context = useContext(ResumeContext);
   if (context === undefined) {
     throw new Error("useResume must be used within a ResumeProvider");

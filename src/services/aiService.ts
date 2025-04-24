@@ -1,5 +1,4 @@
-
-import { AiSuggestion, ResumeContent, JobDescription } from "../types";
+import { AiSuggestion, ResumeContent, JobDescription, PersonalInfo, ExperienceItem, EducationItem } from "../types";
 import { v4 as uuidv4 } from "uuid";
 
 // This is a mock AI service that would normally call an external API
@@ -127,4 +126,121 @@ export const improveResumeSection = async (
   }
   
   return content;
+};
+
+// New function for auto-generating professional summary
+export const generateProfessionalSummary = async (
+  personalInfo: PersonalInfo,
+  experience: ExperienceItem[],
+  education: EducationItem[],
+  skills: string[],
+  yearsOfExperience?: number,
+  targetJobTitle?: string
+): Promise<string> => {
+  console.log("Generating professional summary based on user inputs");
+  
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1800));
+  
+  // Extract key information for the summary
+  const currentJobTitle = personalInfo.jobTitle || "Professional";
+  const topSkills = skills.slice(0, 5).join(", ");
+  const mostRecentExperience = experience[0] || null;
+  const highestEducation = education[0] || null;
+  const experienceYears = yearsOfExperience || (mostRecentExperience ? "5+" : "several");
+  const targetRole = targetJobTitle || currentJobTitle;
+  
+  // Generate a tailored summary based on available information
+  let summary = `${currentJobTitle} with ${experienceYears} years of experience specializing in ${topSkills}.`;
+  
+  // Add experience details if available
+  if (mostRecentExperience) {
+    summary += ` Proven track record of success at ${mostRecentExperience.company} where I ${mostRecentExperience.highlights[0] ? 
+      mostRecentExperience.highlights[0].toLowerCase().replace(/^I /i, '') : 
+      "delivered high-quality results"}.`;
+  }
+  
+  // Add education if available
+  if (highestEducation) {
+    summary += ` Holds a ${highestEducation.degree} from ${highestEducation.institution}.`;
+  }
+  
+  // Add forward-looking statement
+  summary += ` Seeking to leverage my expertise in ${topSkills} to excel as a ${targetRole}.`;
+  
+  return summary;
+};
+
+// New function for skill gap analysis
+export const analyzeSkillGap = async (
+  resumeSkills: string[],
+  jobDescription: JobDescription
+): Promise<{
+  missingSkills: string[],
+  matchingSkills: string[],
+  recommendedSkills: string[],
+  matchPercentage: number
+}> => {
+  console.log("Analyzing skill gap between resume and job description");
+  
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Extract keywords from job description
+  const jobKeywords = jobDescription.keywords || [];
+  
+  // Convert all skills to lowercase for case-insensitive comparison
+  const normalizedResumeSkills = resumeSkills.map(skill => skill.toLowerCase());
+  const normalizedJobKeywords = jobKeywords.map(keyword => keyword.toLowerCase());
+  
+  // Find matching and missing skills
+  const matchingSkills: string[] = [];
+  const missingSkills: string[] = [];
+  
+  normalizedJobKeywords.forEach((keyword, index) => {
+    if (normalizedResumeSkills.some(skill => skill.includes(keyword) || keyword.includes(skill))) {
+      // Use the original casing from the job keywords
+      matchingSkills.push(jobKeywords[index]);
+    } else {
+      missingSkills.push(jobKeywords[index]);
+    }
+  });
+  
+  // Calculate match percentage
+  const matchPercentage = jobKeywords.length > 0 
+    ? Math.round((matchingSkills.length / jobKeywords.length) * 100) 
+    : 0;
+  
+  // Generate additional recommended skills based on the job and existing skills
+  // In a real implementation, this would use more sophisticated analysis
+  const commonTechSkills = [
+    "Git",
+    "REST API",
+    "CI/CD",
+    "Agile methodologies",
+    "Unit testing",
+    "AWS",
+    "Docker",
+    "Microservices",
+    "GraphQL",
+    "MongoDB"
+  ];
+  
+  const recommendedSkills = missingSkills.concat(
+    commonTechSkills.filter(skill => 
+      !normalizedResumeSkills.some(resumeSkill => 
+        resumeSkill.includes(skill.toLowerCase())
+      ) && 
+      !missingSkills.some(missingSkill => 
+        missingSkill.toLowerCase() === skill.toLowerCase()
+      )
+    ).slice(0, 3) // Add up to 3 relevant tech skills not in the job description
+  );
+  
+  return {
+    missingSkills,
+    matchingSkills,
+    recommendedSkills,
+    matchPercentage
+  };
 };

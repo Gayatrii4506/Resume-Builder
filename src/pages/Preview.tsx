@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,13 +6,30 @@ import { useResume } from "@/contexts/ResumeContext";
 import { exportToPdf } from "@/services/exportService";
 import ResumePreview from "@/components/preview/ResumePreview";
 import Header from "@/components/layout/Header";
+import { useToast } from "@/components/ui/use-toast";
 
 const Preview = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { resume, activeTemplate } = useResume();
   
-  const handleExport = () => {
-    exportToPdf(resume, activeTemplate);
+  const handleExport = async () => {
+    try {
+      await exportToPdf(resume, activeTemplate);
+      toast({
+        title: "Resume exported",
+        description: "Your resume has been exported as a PDF",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export your resume as PDF",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
   
   return (

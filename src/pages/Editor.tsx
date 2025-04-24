@@ -1,14 +1,14 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { 
   Save, Eye, Download, LayoutDashboard, FileText, Wand, FileQuestion,
-  MessageSquare, BarChart, Check, Trash2, Sparkles
+  MessageSquare, BarChart, Check, Trash2, Sparkles, Palette, Pencil, Lightbulb
 } from "lucide-react";
 import { useResume } from "@/contexts/ResumeContext";
 import { exportToPdf } from "@/services/exportService";
@@ -23,6 +23,8 @@ import AiAssistant from "@/components/ai/AiAssistant";
 import AiSuggestionsList from "@/components/ai/AiSuggestionsList";
 import JobDescriptionAnalyzer from "@/components/ai/JobDescriptionAnalyzer";
 import ResumePreview from "@/components/preview/ResumePreview";
+import TemplateSelector from "@/components/editor/TemplateSelector";
+import SkillGapAnalyzer from "@/components/ai/SkillGapAnalyzer";
 
 const Editor = () => {
   const navigate = useNavigate();
@@ -43,27 +45,30 @@ const Editor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   
-  const handleSave = async () => {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    saveCurrentResume();
-    setIsSaving(false);
-    
-    toast({
-      title: "Resume saved",
-      description: "Your resume has been saved successfully",
-      duration: 3000,
-    });
-  };
-  
+  // State for renaming
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [editedName, setEditedName] = useState(resume.name);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Update editedName if resume changes externally (e.g., loading a different resume)
+  useEffect(() => {
+    setEditedName(resume.name);
+  }, [resume.name]);
+
+  // Focus input when renaming starts
+  useEffect(() => {
+    if (isRenaming) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select(); // Select text for easy replacement
+    }
+  }, [isRenaming]);
+
   const handlePreview = () => {
     navigate("/preview");
   };
   
   const handleExport = () => {
     exportToPdf(resume, activeTemplate);
-    
     toast({
       title: "Resume exported",
       description: "Your resume has been exported as a PDF",
@@ -128,89 +133,137 @@ const Editor = () => {
       setIsAnalyzing(false);
     }
   };
-  
-  const clearJobDescription = () => {
-    setJobDescText("");
-    setJobDescription(null);
+
+  // --- Rename Handlers ---
+  const handleRenameStart = () => {
+    setEditedName(resume.name); // Reset edit field to current name
+    setIsRenaming(true);
   };
-  
-  // Generate initial suggestions when component mounts
-  useEffect(() => {
-    const loadInitialSuggestions = async () => {
-      if (suggestions.length === 0) {
-        setIsGeneratingSuggestions(true);
-        try {
-          const initialSuggestions = await generateSuggestions(resume.content);
-          setSuggestions(initialSuggestions);
-        } catch (error) {
-          console.error("Error generating initial suggestions:", error);
-        } finally {
-          setIsGeneratingSuggestions(false);
-        }
-      }
-    };
-    
-    loadInitialSuggestions();
-  }, []);
-  
+
+  const handleRenameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedName(e.target.value);
+  };
+
+  const handleRenameSubmit = () => {
+    let nameChanged = false;
+    if (editedName.trim() === "") {
+      toast({ title: "Error", description: "Resume name cannot be empty", variant: "destructive" });
+      setEditedName(resume.name); // Reset to original name
+    } else if (editedName.trim() !== resume.name) {
+        setResume(prev => ({ ...prev, name: editedName.trim() }));
+        toast({ title: "Renamed", description: `Resume renamed to "${editedName.trim()}"` });
+        nameChanged = true;
+    }
+    setIsRenaming(false);
+    return nameChanged; // Indicate if the name was actually changed
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleRenameSubmit();
+    } else if (e.key === "Escape") {
+      setEditedName(resume.name); // Reset on escape
+      setIsRenaming(false);
+    }
+  };
+  // --- End Rename Handlers ---
+
+  // --- Save Handler (Updated) ---
+  const handleSave = async () => {
+    let nameWasUpdated = false;
+    // Ensure the latest name from edit state is set before saving
+    if (isRenaming) {
+       nameWasUpdated = handleRenameSubmit(); // Commit rename if user clicks save while input is active
+       // If rename failed (e.g., empty name), don't proceed with save
+       if (!nameWasUpdated && editedName.trim() === "") return; 
+    }
+    setIsSaving(true);
+    // saveCurrentResume uses the state from ResumeContext, which handleRenameSubmit updated
+    await new Promise(resolve => setTimeout(resolve, 800)); 
+    saveCurrentResume(); 
+    setIsSaving(false);
+    // Avoid showing double toast if rename happened
+    if (!nameWasUpdated) { 
+      toast({
+        title: "Resume saved",
+        description: "Your resume has been saved successfully",
+        duration: 3000,
+      });
+    }
+  };
+  // --- End Save Handler ---
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold">{resume.name}</h1>
-          <div className="flex gap-2">
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          {/* -- Interactive Resume Title -- */} 
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {isRenaming ? (
+              <Input
+                ref={renameInputRef}
+                value={editedName}
+                onChange={handleRenameChange}
+                onKeyDown={handleRenameKeyDown}
+                onBlur={handleRenameSubmit} // Save when input loses focus
+                className="text-2xl md:text-3xl font-bold h-10 flex-1"
+              />
+            ) : (
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={handleRenameStart}>
+                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 truncate">
+                  {resume.name}
+                 </h1>
+                 <Pencil className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+              </div>
+            )}
+          </div>
+           {/* -- End Interactive Resume Title -- */}
+
+          <div className="flex flex-wrap gap-2">
             <Button 
+              size="sm"
               variant="outline" 
               onClick={() => navigate("/dashboard")}
             >
               <LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard
             </Button>
             <Button 
+              size="sm"
               variant="outline" 
               onClick={handlePreview}
             >
-              <Eye className="h-4 w-4 mr-2" /> Preview
+              <Eye className="h-4 w-4 mr-2" /> Full Preview
             </Button>
             <Button 
+              size="sm"
               variant="outline" 
               onClick={handleExport}
             >
-              <Download className="h-4 w-4 mr-2" /> Export
+              <Download className="h-4 w-4 mr-2" /> Export PDF
             </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-            >
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
                 <>Saving...</>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" /> Save
+                  <Save className="h-4 w-4 mr-2" /> Save Resume
                 </>
               )}
             </Button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Left panel - Editor sections */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <Tabs defaultValue="content" className="w-full">
-              <TabsList className="mb-6 grid grid-cols-4 w-full">
-                <TabsTrigger value="content">
-                  <FileText className="h-4 w-4 mr-2" /> Content
-                </TabsTrigger>
-                <TabsTrigger value="ai-assistant">
-                  <Wand className="h-4 w-4 mr-2" /> AI Assistant
-                </TabsTrigger>
-                <TabsTrigger value="job-match">
-                  <FileQuestion className="h-4 w-4 mr-2" /> Job Match
-                </TabsTrigger>
-                <TabsTrigger value="analytics">
-                  <BarChart className="h-4 w-4 mr-2" /> Analytics
-                </TabsTrigger>
+              <TabsList className="w-full mb-6">
+                <TabsTrigger value="content" data-value="content" className="flex-1">Content</TabsTrigger>
+                <TabsTrigger value="template" data-value="template" className="flex-1">Template</TabsTrigger>
+                <TabsTrigger value="ai" data-value="ai" className="flex-1">AI Assistant</TabsTrigger>
+                <TabsTrigger value="job-match" data-value="job-match" className="flex-1">Job Match</TabsTrigger>
               </TabsList>
               
               <TabsContent value="content" className="space-y-6">
@@ -221,115 +274,74 @@ const Editor = () => {
                 <SkillsSection />
               </TabsContent>
               
-              <TabsContent value="ai-assistant">
+              <TabsContent value="template" className="mt-4">
                 <div className="space-y-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="mb-4 flex justify-between items-center">
-                        <h3 className="text-xl font-semibold flex items-center">
-                          <Sparkles className="h-5 w-5 mr-2 text-primary" /> AI Suggestions
-                        </h3>
-                        <Button 
-                          size="sm" 
-                          onClick={handleGenerateSuggestions}
-                          disabled={isGeneratingSuggestions}
-                        >
-                          {isGeneratingSuggestions ? "Generating..." : "Refresh Suggestions"}
-                        </Button>
-                      </div>
-                      <AiSuggestionsList />
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-semibold mb-4 flex items-center">
-                        <MessageSquare className="h-5 w-5 mr-2 text-primary" /> AI Chat Assistant
-                      </h3>
-                      <AiAssistant />
-                    </CardContent>
-                  </Card>
+                  <div className="bg-muted p-4 rounded-lg mb-4">
+                    <h3 className="text-lg font-medium mb-2">Templates & Styling</h3>
+                    <p className="text-muted-foreground">
+                      Choose from our library of ATS-friendly templates or customize colors to match your personal brand.
+                    </p>
+                  </div>
+                  <TemplateSelector />
                 </div>
               </TabsContent>
               
-              <TabsContent value="job-match">
+              <TabsContent value="ai" className="space-y-6 mt-4">
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-4">Job Description Analyzer</h3>
-                    <div className="mb-4">
-                      <p className="text-muted-foreground mb-2">
-                        Paste a job description below to analyze and optimize your resume for this specific role.
-                      </p>
-                      <Textarea
-                        value={jobDescText}
-                        onChange={(e) => setJobDescText(e.target.value)}
-                        placeholder="Paste job description here..."
-                        className="min-h-[200px] mb-4"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleAnalyzeJobDescription}
-                          disabled={isAnalyzing || !jobDescText.trim()}
-                        >
-                          {isAnalyzing ? "Analyzing..." : "Analyze Job Description"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={clearJobDescription}
-                          disabled={!jobDescText && !jobDescription}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" /> Clear
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {jobDescription && <JobDescriptionAnalyzer />}
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" /> AI Suggestions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      size="sm" 
+                      onClick={handleGenerateSuggestions}
+                      disabled={isGeneratingSuggestions} 
+                      className="mb-4"
+                    >
+                      {isGeneratingSuggestions ? "Generating..." : "Refresh Suggestions"}
+                    </Button>
+                    <AiSuggestionsList />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                     <CardTitle className="flex items-center gap-2">
+                       <MessageSquare className="h-5 w-5 text-primary" /> AI Chat Assistant
+                     </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AiAssistant />
                   </CardContent>
                 </Card>
               </TabsContent>
               
-              <TabsContent value="analytics">
+              <TabsContent value="job-match" className="mt-4">
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-4">Resume Analytics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-muted p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Resume Score</h4>
-                        <div className="text-3xl font-bold">85/100</div>
-                      </div>
-                      <div className="bg-muted p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-2">ATS Compatibility</h4>
-                        <div className="text-3xl font-bold text-green-500">High</div>
-                      </div>
-                      <div className="bg-muted p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Keywords</h4>
-                        <div className="text-3xl font-bold">24</div>
-                      </div>
+                  <CardHeader>
+                    <CardTitle>Job Description Analyzer</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                     <p className="text-sm text-muted-foreground">
+                        Paste a job description below to analyze and optimize your resume for this specific role.
+                      </p>
+                    <Textarea
+                      value={jobDescText}
+                      onChange={(e) => setJobDescText(e.target.value)}
+                      placeholder="Paste job description here..."
+                      className="min-h-[150px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleAnalyzeJobDescription}
+                        disabled={isAnalyzing || !jobDescText.trim()}
+                      >
+                        {isAnalyzing ? "Analyzing..." : "Analyze"}
+                      </Button>
                     </div>
-                    
-                    <h4 className="font-semibold mb-2">Improvement Areas</h4>
-                    <ul className="space-y-2 mb-6">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                        <span>Strong summary section with key qualifications</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                        <span>Good use of action verbs in experience descriptions</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-amber-500">
-                        <span className="h-5 w-5 flex items-center justify-center shrink-0 mt-0.5">!</span>
-                        <span>Consider adding more quantifiable achievements</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-amber-500">
-                        <span className="h-5 w-5 flex items-center justify-center shrink-0 mt-0.5">!</span>
-                        <span>Skills section could be expanded with more technical skills</span>
-                      </li>
-                    </ul>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      These analytics are based on industry standards and best practices for resume optimization.
-                    </p>
+                    {jobDescription && <JobDescriptionAnalyzer />} 
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -337,21 +349,25 @@ const Editor = () => {
           </div>
           
           {/* Right panel - Preview */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <h3 className="text-xl font-semibold mb-4">Live Preview</h3>
-              <div className="border rounded-lg overflow-hidden mb-4">
-                <ResumePreview scale={0.6} />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handlePreview}>
-                  <Eye className="h-4 w-4 mr-2" /> Full Preview
-                </Button>
-                <Button onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-2" /> Export PDF
-                </Button>
-              </div>
-            </div>
+          <div className="lg:col-span-1 sticky top-24">
+            <Card className="shadow-md border border-gray-200 overflow-hidden">
+               <CardHeader className="bg-gray-50 border-b p-4">
+                 <CardTitle className="text-lg">Live Preview</CardTitle>
+               </CardHeader>
+               <CardContent className="p-4 bg-gray-200">
+                 <div className="aspect-[8.5/11] w-full overflow-hidden border border-gray-300 shadow-inner">
+                  <ResumePreview scale={0.65} /> 
+                 </div>
+               </CardContent>
+                <CardFooter className="bg-gray-50 border-t p-3 flex justify-end gap-2">
+                   <Button size="sm" variant="outline" onClick={handlePreview}>
+                    <Eye className="h-4 w-4 mr-2" /> Full Preview
+                  </Button>
+                  <Button size="sm" onClick={handleExport}>
+                    <Download className="h-4 w-4 mr-2" /> Export PDF
+                  </Button>
+                </CardFooter>
+            </Card>
           </div>
         </div>
       </main>
